@@ -43,3 +43,12 @@ add_custom_command(
     ARGS -O binary $<TARGET_FILE:${PROJECT_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.bin
     COMMENT "Generating binary file from ELF"
 )
+
+# Custom target for flashing.
+
+add_custom_target(flash
+    COMMAND
+          st-flash --reset write ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.bin 0x8000000
+    COMMENT "flashes it"
+)
+add_dependencies(flash ${PROJECT_NAME})
