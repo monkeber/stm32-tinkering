@@ -18,3 +18,7 @@ cmake --build --preset debug --target blinky
 ```bash
 cmake --build --preset debug --target flash
 ```
+
+## Configuration VSCode
+
+In .vscode you will find some sample configs that you can use to quickly start building and debugging the project from the VSCode itself.
