@@ -1,0 +1,31 @@
+{
+    "cmake.configureOnOpen": false,
+    "cmake.options.advanced": {
+        "kit": { 
+            "statusBarVisibility": "compact",
+            "statusBarLength": 15
+        },
+        "configurePreset": {
+            "statusBarVisibility": "compact",
+        },
+        "buildPreset": {
+            "statusBarVisibility": "compact",
+        },
+        "build": {
+            "statusBarVisibility": "icon"
+        },
+        "buildTarget": { 
+            "statusBarVisibility": "compact"
+        },
+        "launch": {
+            "statusBarVisibility": "visible"
+        },
+        "launchTarget": { 
+            "statusBarVisibility": "hidden"
+        }
+    },
+    "clangd.arguments": [
+        "--query-driver=/usr/bin/arm-none-eabi-g++",
+        "--compile-commands-dir=${workspaceFolder}/build"
+    ]
+}
