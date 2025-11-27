@@ -33,12 +33,7 @@
     {
       "name": "debug",
       "configurePreset": "debug",
-      "targets": ["blinky"]
-    },
-    {
-      "name": "flash-debug",
-      "configurePreset": "debug",
-      "targets": ["flash"]
+      "targets": ["blinky", "flash"]
     },
     {
       "name": "release",

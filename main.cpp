@@ -72,8 +72,8 @@ static inline void spin(volatile std::uint32_t count)
 int main()
 {
 	std::uint32_t led = get_pin('A', 5);
-	// RCC->APB2ENR |= get_bit(get_pin_bank(led));
-	RCC->APB2ENR |= (1 << 2);
+	// Move bit 2 bits to the left because that's where IO pins start on APB2ENR.
+	RCC->APB2ENR |= (get_bit(get_pin_bank(led)) << 2);
 	struct gpio* gpio = get_gpio(0);
 	gpio->CRL &= ~(0xFU << 20);	   // Clear MODE5[1:0] and CNF5[1:0]
 	gpio->CRL |= (0x1U << 20);	   // MODE5 = 01 (Output mode, max speed 10 MHz)
