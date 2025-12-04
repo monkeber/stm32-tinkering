@@ -1,5 +1,9 @@
 #include <cstdint>
 
+//
+// Pin operations.
+//
+
 constexpr std::uint32_t get_bit(const std::uint32_t x)
 {
 	return std::uint32_t{ 1 } << x;
@@ -18,6 +22,10 @@ constexpr std::uint32_t get_pin_bank(const std::uint32_t pin)
 {
 	return pin >> 8;
 }
+
+//
+// GPIO
+//
 
 struct gpio
 {
@@ -46,6 +54,16 @@ static inline void gpio_set_mode(const std::uint32_t pin, const std::uint8_t mod
 	gpio->CRL |= (mode & 3u) << (n * 2u);				// Set new mode
 }
 
+static inline void gpio_write(std::uint32_t pin, bool val)
+{
+	struct gpio* gpio = get_gpio(get_pin_bank(pin));
+	gpio->BSRR = (1u << get_pin_no(pin)) << (val ? 0 : 16);
+}
+
+//
+// RCC
+//
+
 struct rcc
 {
 	volatile std::uint32_t CR, CFGR, CIR, APB2RSTR, APB1RSTR, AHBENR, APB2ENR, APB1ENR, BDCR, CSR,
@@ -55,10 +73,33 @@ struct rcc
 rcc* const RCC{ reinterpret_cast<rcc*>(0x40021000) };
 // User led is connected to PB13.
 
-static inline void gpio_write(std::uint32_t pin, bool val)
+//
+// SysTick
+//
+
+struct systick
 {
-	struct gpio* gpio = get_gpio(get_pin_bank(pin));
-	gpio->BSRR = (1u << get_pin_no(pin)) << (val ? 0 : 16);
+	volatile std::uint32_t CSR, RVR, CVR, CALIB;
+};
+
+systick* const SYSTICK{ reinterpret_cast<systick*>(0xe000e010) };
+
+constexpr void systick_init(std::uint32_t ticks)
+{
+	if ((ticks - 1) > 0xffffff)
+	{
+		return;
+	}
+
+	SYSTICK->RVR = ticks - 1;
+	SYSTICK->CVR = 0;
+	SYSTICK->CSR = get_bit(0) | get_bit(1) | get_bit(2);
+}
+
+static volatile std::uint32_t s_ticks;
+void SysTick_Handler()
+{
+	++s_ticks;
 }
 
 static inline void spin(volatile std::uint32_t count)
@@ -69,6 +110,25 @@ static inline void spin(volatile std::uint32_t count)
 	}
 }
 
+bool timer_expired(std::uint32_t* expTime, const std::uint32_t period, const std::uint32_t now)
+{
+	if ((now + period) < *expTime)
+	{
+		*expTime = 0;
+	}
+	if (*expTime == 0)
+	{
+		*expTime = now + period;
+	}
+	if (*expTime > now) {
+		return false;
+	}
+
+	*expTime = (now - *expTime) > period ? now + period : *expTime + period;
+
+	return true;
+}
+
 int main()
 {
 	std::uint32_t led = get_pin('A', 5);
@@ -76,13 +136,24 @@ int main()
 	RCC->APB2ENR |= (get_bit(get_pin_bank(led)) << 2);
 	struct gpio* gpio = get_gpio(0);
 	gpio->CRL &= ~(0xFU << 20);	   // Clear MODE5[1:0] and CNF5[1:0]
-	gpio->CRL |= (0x1U << 20);	   // MODE5 = 01 (Output mode, max speed 10 MHz)
+	gpio->CRL |= (0x1U << 20);	   // MODE5 = 01
+
+	systick_init(8'000'000 / 1000);
+
+	std::uint32_t timer = 0, period = 500;
 	for (;;)
 	{
-		gpio_write(led, true);
-		spin(999999);
-		gpio_write(led, false);
-		spin(999999);
+		if (timer_expired(&timer, period, s_ticks))
+		{
+			static bool on{ true };
+			gpio_write(led, on);
+
+			on = !on;
+		}
+		// gpio_write(led, true);
+		// spin(999999);
+		// gpio_write(led, false);
+		// spin(999999);
 	}
 
 	return 0;
@@ -124,4 +195,18 @@ __attribute__((naked, noreturn)) void _reset()
 __attribute__((section(".vectors"))) void (*const tab[16 + 91])(void) = {
 	reinterpret_cast<void (*)(void)>(&_estack),
 	_reset,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	SysTick_Handler
 };
