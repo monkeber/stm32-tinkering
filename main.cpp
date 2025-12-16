@@ -24,6 +24,38 @@ constexpr std::uint32_t get_pin_bank(const std::uint32_t pin)
 }
 
 //
+// General.
+//
+
+static inline void spin(volatile std::uint32_t count)
+{
+	while (count--)
+	{
+		(void)0;
+	}
+}
+
+bool timer_expired(std::uint32_t* expTime, const std::uint32_t period, const std::uint32_t now)
+{
+	if ((now + period) < *expTime)
+	{
+		*expTime = 0;
+	}
+	if (*expTime == 0)
+	{
+		*expTime = now + period;
+	}
+	if (*expTime > now)
+	{
+		return false;
+	}
+
+	*expTime = (now - *expTime) > period ? now + period : *expTime + period;
+
+	return true;
+}
+
+//
 // GPIO
 //
 
@@ -48,15 +80,21 @@ enum class GPIO_MODE
 
 static inline void gpio_set_mode(const std::uint32_t pin, const std::uint8_t mode)
 {
-	struct gpio* gpio = get_gpio(get_pin_bank(pin));	// GPIO bank
-	const std::uint32_t n{ get_pin_no(pin) };			// Pin number
-	gpio->CRL &= ~(3U << (n * 2));						// Clear existing setting
-	gpio->CRL |= (mode & 3u) << (n * 2u);				// Set new mode
+	gpio* gpio = get_gpio(get_pin_bank(pin));	 // GPIO bank
+	const std::uint32_t n{ get_pin_no(pin) };	 // Pin number
+	gpio->CRL &= ~(3U << (n * 2));				 // Clear existing setting
+	gpio->CRL |= (mode & 3u) << (n * 2u);		 // Set new mode
 }
+
+// constexpr void gpio_set_af(std::uint32_t pin, std::uint8_t af_num)
+// {
+// 	gpio* gpio{ get_gpio(get_pin_bank(pin)) };
+// 	const std::uint32_t n{ get_pin_no(pin) };
+// }
 
 static inline void gpio_write(std::uint32_t pin, bool val)
 {
-	struct gpio* gpio = get_gpio(get_pin_bank(pin));
+	gpio* gpio = get_gpio(get_pin_bank(pin));
 	gpio->BSRR = (1u << get_pin_no(pin)) << (val ? 0 : 16);
 }
 
@@ -102,34 +140,48 @@ void SysTick_Handler()
 	++s_ticks;
 }
 
-static inline void spin(volatile std::uint32_t count)
+//
+// USART
+//
+
+struct uart
 {
-	while (count--)
+	volatile std::uint32_t SR, DR, BRR, CR1, CR2, CR3, GTPR;
+};
+
+uart* const USART2{ reinterpret_cast<uart*>(0x40004400) };
+
+constexpr std::uint32_t FREQUENCY{ 8'000'000 };
+
+std::int32_t uart_read_ready(uart* uart)
+{
+	return uart->SR & get_bit(5);	 // If RXNE bit is set, data is ready
+}
+
+std::uint8_t uart_read_byte(uart* uart)
+{
+	return static_cast<std::uint8_t>(uart->DR & 255);	 // If RXNE bit is set, data is ready
+}
+
+void uart_write_byte(uart* uart, std::uint8_t byte)
+{
+	uart->DR = byte;
+	uart->DR = byte;
+	while ((uart->SR & get_bit(7)) == 0)
 	{
-		(void)0;
+		spin(1);
 	}
 }
 
-bool timer_expired(std::uint32_t* expTime, const std::uint32_t period, const std::uint32_t now)
+void uart_write_buf(uart* uart, const char* buf, std::size_t len)
 {
-	if ((now + period) < *expTime)
+	while (len-- > 0)
 	{
-		*expTime = 0;
+		uart_write_byte(uart, *reinterpret_cast<const std::uint8_t*>(buf++));
 	}
-	if (*expTime == 0)
-	{
-		*expTime = now + period;
-	}
-	if (*expTime > now) {
-		return false;
-	}
-
-	*expTime = (now - *expTime) > period ? now + period : *expTime + period;
-
-	return true;
 }
 
-int main()
+void blink()
 {
 	std::uint32_t led = get_pin('A', 5);
 	// Move bit 2 bits to the left because that's where IO pins start on APB2ENR.
@@ -149,13 +201,25 @@ int main()
 			gpio_write(led, on);
 
 			on = !on;
-		}
-		// gpio_write(led, true);
-		// spin(999999);
-		// gpio_write(led, false);
-		// spin(999999);
-	}
 
+			uart_write_buf(USART2, "hi\r\n", 4);
+		}
+	}
+}
+
+void uart_init(uart* uart, const std::uint32_t baud)
+{
+	// const std::uint32_t rx{ get_pin('A', 3) }, tx{ get_pin('A', 2) };
+	RCC->APB1ENR |= get_bit(17);
+	uart->CR1 = 0;
+	uart->BRR = FREQUENCY / baud;
+	uart->CR1 |= get_bit(13) | get_bit(2) | get_bit(3);
+}
+
+int main()
+{
+	uart_init(USART2, 115200);
+	blink();
 	return 0;
 }
 
