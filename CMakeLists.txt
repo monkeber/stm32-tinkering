@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 4.0.0)
 
 project(blinky C CXX ASM)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/startup.cpp src/syscalls.cpp src/hal.hpp)
+
+target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -W
@@ -17,8 +19,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Wconversion
     -g3
     -ffunction-sections
+    -fno-exceptions
     -fdata-sections
-    -I.
     -mcpu=cortex-m4
     -mthumb
     -mfloat-abi=hard
@@ -26,7 +28,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
-    -T${CMAKE_SOURCE_DIR}/link.ld
+    -T${CMAKE_SOURCE_DIR}/src/link.ld
     -nostartfiles
     -nostdlib
     --specs nano.specs
