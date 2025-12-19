@@ -2,9 +2,38 @@ cmake_minimum_required(VERSION 4.0.0)
 
 project(blinky C CXX ASM)
 
-add_executable(${PROJECT_NAME} src/main.cpp src/startup.cpp src/syscalls.cpp src/hal.hpp)
+include(FetchContent)
 
-target_include_directories(${PROJECT_NAME} PRIVATE src)
+FetchContent_Declare(
+  cmsis_f1
+  GIT_REPOSITORY https://github.com/STMicroelectronics/cmsis-device-f1.git
+)
+
+FetchContent_Declare(
+  cmsis_core
+  GIT_REPOSITORY https://github.com/ARM-software/CMSIS_5.git
+  GIT_TAG 5.9.0
+)
+
+FetchContent_MakeAvailable(cmsis_f1 cmsis_core)
+
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    src/startup.cpp
+    src/syscalls.cpp
+    src/hal.hpp
+    src/hal.cpp
+    ${cmsis_f1_SOURCE_DIR}/Source/Templates/gcc/startup_stm32f103xb.s
+)
+
+target_include_directories(${PROJECT_NAME}
+    PRIVATE
+        src
+        /usr/arm-none-eabi/include
+        ${cmsis_f1_SOURCE_DIR}/Include
+        ${cmsis_core_SOURCE_DIR}/CMSIS/Core/Include
+
+)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -W
@@ -21,19 +50,19 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -ffunction-sections
     -fno-exceptions
     -fdata-sections
-    -mcpu=cortex-m4
+    -mcpu=cortex-m3
     -mthumb
-    -mfloat-abi=hard
-    -mfpu=fpv4-sp-d16
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE
     -T${CMAKE_SOURCE_DIR}/src/link.ld
     -nostartfiles
-    -nostdlib
-    --specs nano.specs
+    --specs=nano.specs
     -lc
+    -lm
     -lgcc
+    -mcpu=cortex-m3
+    -mthumb
     -Wl,--gc-sections
     -Wl,-Map=${PROJECT_NAME}.map
 )

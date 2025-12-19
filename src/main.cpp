@@ -29,7 +29,7 @@ void blink()
 			on = !on;
 
 			// uart_write_buf(USART2, "hi\r\n", 4);
-			printf("LED: %d, tick: %lu\r\n", on, static_cast<unsigned long>(s_ticks));
+			std::printf("LED: %d, tick: %lu\r\n", on, static_cast<unsigned long>(s_ticks));
 		}
 	}
 }
