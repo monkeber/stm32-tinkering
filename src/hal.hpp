@@ -2,7 +2,12 @@
 
 #include <cstdint>
 
+extern "C"
+{
+
 #include <stm32f103xb.h>
+
+}
 
 //
 // Pin operations.
@@ -64,30 +69,14 @@ constexpr bool timer_expired(
 // GPIO
 //
 
-// struct gpio
-// {
-// 	volatile std::uint32_t CRL, CRH, IDR, ODR, BSRR, BRR, LCKR;
-// };
-
-// gpio* get_gpio(const std::uint32_t bank);
-
 GPIO_TypeDef* get_gpio(const std::uint32_t bank);
-
-// Enum values are per datasheet: 0, 1, 2, 3
-enum class GPIO_MODE
-{
-	INPUT,
-	OUTPUT,
-	AF,
-	ANALOG
-};
 
 static inline void gpio_set_mode(const std::uint32_t pin, const std::uint8_t mode)
 {
 	GPIO_TypeDef* gpio = get_gpio(get_pin_bank(pin));	 // GPIO bank
-	const std::uint32_t n{ get_pin_no(pin) };	 // Pin number
-	gpio->CRL &= ~(3U << (n * 2));				 // Clear existing setting
-	gpio->CRL |= (mode & 3u) << (n * 2u);		 // Set new mode
+	const std::uint32_t n{ get_pin_no(pin) };			 // Pin number
+	gpio->CRL &= ~(3U << (n * 2));						 // Clear existing setting
+	gpio->CRL |= (mode & 3u) << (n * 2u);				 // Set new mode
 }
 
 static inline void gpio_write(std::uint32_t pin, bool val)
@@ -100,13 +89,6 @@ static inline void gpio_write(std::uint32_t pin, bool val)
 // RCC
 //
 
-struct rcc
-{
-	volatile std::uint32_t CR, CFGR, CIR, APB2RSTR, APB1RSTR, AHBENR, APB2ENR, APB1ENR, BDCR, CSR,
-		AHBRSTR, CFGR2;
-};
-
-rcc* const RCC{ reinterpret_cast<rcc*>(0x40021000) };
 // User led is connected to PB13.
 
 //
@@ -136,22 +118,15 @@ constexpr void systick_init(std::uint32_t ticks)
 // USART
 //
 
-struct uart
-{
-	volatile std::uint32_t SR, DR, BRR, CR1, CR2, CR3, GTPR;
-};
-
-uart* const USART2{ reinterpret_cast<uart*>(0x40004400) };
-
 constexpr std::uint32_t FREQUENCY{ 8'000'000 };
 
-std::int32_t uart_read_ready(uart* uart);
+std::int32_t uart_read_ready(USART_TypeDef* uart);
 
-std::uint8_t uart_read_byte(uart* uart);
+std::uint8_t uart_read_byte(USART_TypeDef* uart);
 
-void uart_write_byte(uart* uart, std::uint8_t byte);
+void uart_write_byte(USART_TypeDef* uart, std::uint8_t byte);
 
-constexpr void uart_write_buf(uart* uart, const char* buf, std::size_t len)
+constexpr void uart_write_buf(USART_TypeDef* uart, const char* buf, std::size_t len)
 {
 	while (len-- > 0)
 	{

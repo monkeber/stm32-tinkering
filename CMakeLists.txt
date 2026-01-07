@@ -4,35 +4,20 @@ project(blinky C CXX ASM)
 
 include(FetchContent)
 
-FetchContent_Declare(
-  cmsis_f1
-  GIT_REPOSITORY https://github.com/STMicroelectronics/cmsis-device-f1.git
-)
-
-FetchContent_Declare(
-  cmsis_core
-  GIT_REPOSITORY https://github.com/ARM-software/CMSIS_5.git
-  GIT_TAG 5.9.0
-)
-
-FetchContent_MakeAvailable(cmsis_f1 cmsis_core)
-
 add_executable(${PROJECT_NAME}
     src/main.cpp
-    src/startup.cpp
     src/syscalls.cpp
     src/hal.hpp
     src/hal.cpp
-    ${cmsis_f1_SOURCE_DIR}/Source/Templates/gcc/startup_stm32f103xb.s
+    ${CMAKE_SOURCE_DIR}/extern/cmsis_f1/Source/Templates/gcc/startup_stm32f103xb.s
 )
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         src
         /usr/arm-none-eabi/include
-        ${cmsis_f1_SOURCE_DIR}/Include
-        ${cmsis_core_SOURCE_DIR}/CMSIS/Core/Include
-
+        ${CMAKE_SOURCE_DIR}/extern/cmsis_f1/Include
+        ${CMAKE_SOURCE_DIR}/extern/cmsis_core/CMSIS/Core/Include
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE

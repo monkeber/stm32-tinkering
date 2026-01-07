@@ -1,4 +1,4 @@
-ENTRY(_reset);
+ENTRY(Reset_Handler);
 MEMORY {
   flash(rx)  : ORIGIN = 0x08000000, LENGTH = 128k
   sram(rwx) : ORIGIN = 0x20000000, LENGTH = 20k  /* remaining 64k in a separate address space */
@@ -6,7 +6,11 @@ MEMORY {
 _estack     = ORIGIN(sram) + LENGTH(sram);    /* stack points to end of SRAM */
 
 SECTIONS {
-  .vectors  : { KEEP(*(.vectors)) }   > flash
+  .isr_vector : {
+    . = ALIGN(4);
+    KEEP(*(.isr_vector))
+    . = ALIGN(4);
+  } > flash
   .text     : { *(.text*) }           > flash
   .rodata   : { *(.rodata*) }         > flash
 
@@ -25,5 +29,5 @@ SECTIONS {
   } > sram
 
   . = ALIGN(8);
-  _end = .;     /* for cmsis_gcc.h  */
+  _end = .;     /* for cmsis_gcc.QAAh  */
 }

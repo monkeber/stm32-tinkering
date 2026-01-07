@@ -1,5 +1,7 @@
 #include "hal.hpp"
 
+#include <sys/stat.h>
+
 extern "C"
 {
 	int _write(int fd, char* ptr, int len)
@@ -12,9 +14,12 @@ extern "C"
 		return -1;
 	}
 
-	int _fstat([[maybe_unused]] int fd, [[maybe_unused]] struct stat* st)
+	int _fstat(int fd, struct stat* st)
 	{
-		return -1;
+		if (fd < 0)
+			return -1;
+		st->st_mode = S_IFCHR;
+		return 0;
 	}
 
 	void* _sbrk(int incr)
@@ -50,5 +55,9 @@ extern "C"
 	int _lseek([[maybe_unused]] int fd, [[maybe_unused]] int ptr, [[maybe_unused]] int dir)
 	{
 		return 0;
+	}
+
+	void _init(void)
+	{
 	}
 }
