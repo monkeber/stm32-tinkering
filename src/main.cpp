@@ -13,8 +13,39 @@ extern "C"
 
 	void SystemInit(void)
 	{
-		//   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;    // Enable SYSCFG
+		// Set latency wait states.
+		FLASH->ACR |= FLASH_LATENCY | get_bit(4);
+
+		// Enable HSI.
+		RCC->CR |= get_bit(0);
+
+		// Clear PLL related registers.
+		RCC->CFGR &=
+			~(get_bit(16) | get_bit(17) | get_bit(18) | get_bit(19) | get_bit(20) | get_bit(21));
+		// Set PLL multiplicator.
+		RCC->CFGR |= get_bit(18) | get_bit(19) | get_bit(20) | get_bit(21);
+		// Enable PLL and wait until it's on.
+		RCC->CR |= get_bit(24);
+		while ((RCC->CR & get_bit(25)) == 0)
+		{
+			spin(1);
+		}
+
+		// Set prescalers for AHB, APB1 and APB2.
+		RCC->CFGR &= ~(get_bit(4) | get_bit(5) | get_bit(6) | get_bit(7));
+		RCC->CFGR &= ~(get_bit(8) | get_bit(9) | get_bit(10));
+		RCC->CFGR |= get_bit(10);
+		RCC->CFGR &= ~(get_bit(11) | get_bit(12) | get_bit(13));
+		// Set PLL as system clock.
+		RCC->CFGR |= get_bit(1);
+		while ((RCC->CFGR & get_bit(3)) == 0)
+		{
+			spin(1);
+		}
+
 		SysTick_Config(FREQUENCY / 1000);
+
+		RCC->CFGR |= get_bit(24) | get_bit(26);
 	}
 }
 
@@ -26,8 +57,6 @@ void blink()
 	GPIO_TypeDef* gpio = get_gpio(0);
 	gpio->CRL &= ~(0xFU << 20);	   // Clear MODE5[1:0] and CNF5[1:0]
 	gpio->CRL |= (0x1U << 20);	   // MODE5 = 01
-
-	// systick_init(8'000'000 / 1000);
 
 	std::uint32_t timer = 0, period = 500;
 	for (;;)

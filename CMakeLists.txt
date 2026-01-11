@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 4.0.0)
 
 project(blinky C CXX ASM)
 
-include(FetchContent)
-
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/syscalls.cpp

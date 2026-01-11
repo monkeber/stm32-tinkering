@@ -6,7 +6,6 @@ extern "C"
 {
 
 #include <stm32f103xb.h>
-
 }
 
 //
@@ -118,7 +117,7 @@ constexpr void systick_init(std::uint32_t ticks)
 // USART
 //
 
-constexpr std::uint32_t FREQUENCY{ 8'000'000 };
+constexpr std::uint32_t FREQUENCY{ 64'000'000 };
 
 std::int32_t uart_read_ready(USART_TypeDef* uart);
 
@@ -133,3 +132,20 @@ constexpr void uart_write_buf(USART_TypeDef* uart, const char* buf, std::size_t 
 		uart_write_byte(uart, *reinterpret_cast<const std::uint8_t*>(buf++));
 	}
 }
+
+enum
+{
+	APB1_PRE = 5 /* AHB clock / 4 */,
+	APB2_PRE = 4 /* AHB clock / 2 */
+};
+enum
+{
+	PLL_HSI = 16,
+	PLL_M = 8,
+	PLL_N = 180,
+	PLL_P = 2
+};	  // Run at 180 Mhz
+constexpr std::uint32_t FLASH_LATENCY{ 2 };
+#define SYS_FREQUENCY (72 * 1000000)
+#define APB2_FREQUENCY (SYS_FREQUENCY / (BIT(APB2_PRE - 3)))
+#define APB1_FREQUENCY (SYS_FREQUENCY / (BIT(APB1_PRE - 3)))
