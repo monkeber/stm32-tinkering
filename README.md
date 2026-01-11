@@ -28,7 +28,7 @@ sudo pacman -S uucp
 
 And then run a command like this:
 ```bash
-cu -l /dev/ttyACM0 -s 115200 
+cu -l /dev/ttyACM0 -s 115200
 ```
 
 You might need to use another tty, check which one with:

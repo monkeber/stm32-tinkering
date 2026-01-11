@@ -86,7 +86,7 @@ void uart_init(USART_TypeDef* uart, const std::uint32_t baud)
 	gpio->CRL |= get_bit(14);
 
 	uart->CR1 = 0;
-	uart->BRR = FREQUENCY / baud;
+	uart->BRR = FREQUENCY / 2 / baud;
 	uart->CR1 |= get_bit(13) | get_bit(2) | get_bit(3);
 }
 
